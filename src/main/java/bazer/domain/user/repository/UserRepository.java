@@ -1,6 +1,6 @@
 package bazer.domain.user.repository;
 
-import bazer.domain.user.model.User;
+import bazer.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

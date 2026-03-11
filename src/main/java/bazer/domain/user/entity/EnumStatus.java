@@ -1,4 +1,4 @@
-package bazer.domain.user.model;
+package bazer.domain.user.entity;
 
 import lombok.Getter;
 

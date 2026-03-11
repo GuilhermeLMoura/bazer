@@ -1,6 +1,6 @@
 package bazer.domain.user.security;
 
-import bazer.domain.user.model.User;
+import bazer.domain.user.entity.User;
 import bazer.domain.user.repository.UserRepository;
 import bazer.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;

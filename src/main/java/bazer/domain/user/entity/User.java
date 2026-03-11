@@ -1,5 +1,6 @@
-package bazer.domain.user.model;
+package bazer.domain.user.entity;
 
+import bazer.domain.profile.entity.Profile;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,7 +19,6 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
     @Column(length = 150, unique = true)
     private String username;
 
@@ -29,4 +29,8 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     private EnumStatus status;
+
+    @OneToOne(mappedBy = "user")
+    private Profile profile;
+
 }
