@@ -126,3 +126,31 @@ Thumbs.db
 
 application-local.yml
 application-local.properties
+
+############################################
+# SENSITIVE - APPLICATION PROPERTIES
+############################################
+
+src/main/resources/application.properties
+src/main/resources/data.sql
+
+############################################
+# UPLOADS (imagens geradas em runtime)
+############################################
+
+uploads/
+
+############################################
+# DATABASE WORKBENCH
+############################################
+
+data/
+*.mwb
+*.mwb.bak
+
+############################################
+# POSTMAN COLLECTIONS (podem conter tokens)
+############################################
+
+*.postman_collection.json
+*.postman_environment.json
