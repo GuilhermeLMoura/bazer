@@ -46,6 +46,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.GET, "/assessment-products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/assessment-profiles/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/auth/callback").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
