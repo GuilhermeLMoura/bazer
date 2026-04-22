@@ -1,6 +1,6 @@
 package bazer.domain.user.dto;
 
-import bazer.domain.user.model.EnumRole;
+import bazer.domain.user.entity.EnumRole;
 import lombok.Data;
 
 @Data

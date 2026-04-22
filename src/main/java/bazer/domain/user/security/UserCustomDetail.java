@@ -1,8 +1,8 @@
 package bazer.domain.user.security;
 
 
-import bazer.domain.user.model.EnumRole;
-import bazer.domain.user.model.User;
+import bazer.domain.user.entity.EnumRole;
+import bazer.domain.user.entity.User;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

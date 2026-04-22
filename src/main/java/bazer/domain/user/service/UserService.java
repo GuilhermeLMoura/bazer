@@ -1,8 +1,8 @@
 package bazer.domain.user.service;
 
 import bazer.domain.user.dto.UserCreateDto;
-import bazer.domain.user.model.EnumStatus;
-import bazer.domain.user.model.User;
+import bazer.domain.user.entity.EnumStatus;
+import bazer.domain.user.entity.User;
 import bazer.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
