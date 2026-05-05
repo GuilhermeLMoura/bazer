@@ -2,13 +2,16 @@ package bazer.domain.profile.controller;
 
 import bazer.domain.profile.dto.ProfileReadDto;
 import bazer.domain.profile.dto.ProfileRegisterDto;
+import bazer.domain.profile.dto.ProfileUpdateDto;
 import bazer.domain.profile.entity.Profile;
 import bazer.domain.profile.service.ProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,7 +31,7 @@ public class ProfileController {
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ProfileReadDto> create(
-            @Valid @ModelAttribute ProfileRegisterDto dto,
+            @ParameterObject @Valid @ModelAttribute ProfileRegisterDto dto,
             @RequestParam(value = "photo", required = false) MultipartFile photo
     ) {
         Profile profile = profileService.create(dto, photo);
@@ -70,13 +73,27 @@ public class ProfileController {
         return ResponseEntity.ok(stores);
     }
 
+    @PutMapping("/me")
+    public ResponseEntity<ProfileReadDto> update(@RequestBody @Valid ProfileUpdateDto dto) {
+        return ResponseEntity.ok(toDto(profileService.update(dto)));
+    }
+
+    @PatchMapping("/{id}/commission/{commissionId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProfileReadDto> assignCommission(
+            @PathVariable Long id,
+            @PathVariable Long commissionId) {
+        return ResponseEntity.ok(toDto(profileService.assignCommission(id, commissionId)));
+    }
+
     private ProfileReadDto toDto(Profile profile) {
         return new ProfileReadDto(
                 profile.getId(),
                 profile.getName(),
                 profile.getDocument(),
                 profile.getPhoto(),
-                profile.getPhone()
+                profile.getPhone(),
+                profile.getCommission() != null ? profile.getCommission().getId() : null
         );
     }
 }

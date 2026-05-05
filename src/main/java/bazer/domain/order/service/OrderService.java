@@ -2,6 +2,7 @@ package bazer.domain.order.service;
 
 import bazer.configuration.Exception.BusinessRuleException;
 import bazer.domain.order.dto.CartItemCreateDto;
+import bazer.domain.order.dto.CheckoutDto;
 import bazer.domain.order.dto.ItemOrderReadDto;
 import bazer.domain.order.dto.OrderReadDto;
 import bazer.domain.order.entity.EnumOrderStatus;
@@ -13,7 +14,9 @@ import bazer.domain.product.entity.Product;
 import bazer.domain.product.repository.ProductRepository;
 import bazer.domain.profile.entity.Profile;
 import bazer.domain.profile.repository.ProfileRepository;
-import bazer.domain.user.security.UserCustomDetail;
+import bazer.domain.delivery.service.DeliveryService;
+import bazer.integration.melhorenvio.dto.MelhorEnvioShippingResult;
+import bazer.integration.melhorenvio.service.MelhorEnvioShippingService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,6 +36,8 @@ public class OrderService {
     private final ItemOrderRepository itemOrderRepository;
     private final ProductRepository productRepository;
     private final ProfileRepository profileRepository;
+    private final MelhorEnvioShippingService shippingService;
+    private final DeliveryService deliveryService;
 
     // ─────────────────────────────────────────────────────────
     // CARRINHO
@@ -55,13 +60,29 @@ public class OrderService {
     @Transactional
     public OrderReadDto addItem(CartItemCreateDto dto) {
         Profile profile = getAuthenticatedProfile();
-        Order cart = getActiveCart(profile.getId());
+        Order cart = orderRepository.findByProfileIdAndStatus(profile.getId(), EnumOrderStatus.PENDING)
+                .orElseGet(() -> {
+                    Order newCart = new Order();
+                    newCart.setProfile(profile);
+                    newCart.setStatus(EnumOrderStatus.PENDING);
+                    newCart.setPrice(BigDecimal.ZERO);
+                    return orderRepository.save(newCart);
+                });
 
         Product product = productRepository.findById(dto.productId())
                 .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado: " + dto.productId()));
 
         if (product.getStock() < dto.quantity()) {
             throw new BusinessRuleException("Estoque insuficiente. Disponível: " + product.getStock());
+        }
+
+        if (cart.getStore() == null) {
+            cart.setStore(product.getStore());
+        } else if (!cart.getStore().getId().equals(product.getStore().getId())) {
+            throw new BusinessRuleException(
+                "Seu carrinho já tem itens da loja \"" + cart.getStore().getName() + "\". " +
+                "Finalize ou esvazie o carrinho antes de comprar de outra loja."
+            );
         }
 
         ItemOrder item = cart.getItems() == null ? null :
@@ -104,7 +125,7 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderReadDto checkout() {
+    public OrderReadDto checkout(CheckoutDto dto) {
         Profile profile = getAuthenticatedProfile();
         Order cart = getActiveCart(profile.getId());
 
@@ -112,7 +133,37 @@ public class OrderService {
             throw new BusinessRuleException("Não é possível finalizar um carrinho vazio.");
         }
 
+        cart.getItems().forEach(item -> {
+            Product p = item.getProduct();
+            if (p.getWidth() == null || p.getHeight() == null || p.getLength() == null || p.getWeight() == null) {
+                throw new BusinessRuleException(
+                        "Produto \"" + p.getName() + "\" não possui dimensões cadastradas. Não é possível calcular o frete."
+                );
+            }
+        });
+
+        String fromPostalCode = cart.getStore().getAddresses().stream()
+                .findFirst()
+                .orElseThrow(() -> new BusinessRuleException("A loja não possui endereço cadastrado."))
+                .getPostalCode();
+
+        MelhorEnvioShippingResult shipping = shippingService.calculateCheapest(
+                fromPostalCode, dto.postalCodeDestination(), cart.getItems()
+        );
+
+        BigDecimal subtotal = cart.getPrice();
+        BigDecimal commissionAmount = BigDecimal.ZERO;
+        if (cart.getStore().getCommission() != null) {
+            commissionAmount = subtotal.multiply(cart.getStore().getCommission().getRate());
+        }
+
+        cart.setShippingCost(shipping.price());
+        cart.setCommissionAmount(commissionAmount);
+        cart.setPrice(subtotal.add(shipping.price()).add(commissionAmount));
+        cart.setPostalCodeDestination(dto.postalCodeDestination());
+        cart.setMeServiceId(shipping.serviceId());
         cart.setStatus(EnumOrderStatus.AGUARDANDO_PAGAMENTO);
+
         return toDto(orderRepository.save(cart));
     }
 
@@ -147,17 +198,25 @@ public class OrderService {
     }
 
     // ─────────────────────────────────────────────────────────
+    // LISTAGENS - ADMIN
+    // ─────────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<OrderReadDto> listConfirmedOrders() {
+        return orderRepository.findByStatusOrderByCreatedAtAsc(EnumOrderStatus.CONFIRMED)
+                .stream().map(this::toDto).toList();
+    }
+
+    // ─────────────────────────────────────────────────────────
     // TRANSIÇÕES DE STATUS
     // ─────────────────────────────────────────────────────────
 
-    /**
-     * Simula confirmação de pagamento (AGUARDANDO_PAGAMENTO → CONFIRMED).
-     * Será substituído pelo PaymentService quando integrado.
-     */
+    /** Confirmação manual de pagamento — fallback admin (fluxo normal é via webhook do MP). */
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public OrderReadDto confirmPayment(Long orderId) {
         Order order = getOrThrow(orderId);
-        validateOwnership(order);
         validateTransition(order, EnumOrderStatus.AGUARDANDO_PAGAMENTO, EnumOrderStatus.CONFIRMED);
         order.setStatus(EnumOrderStatus.CONFIRMED);
         return toDto(orderRepository.save(order));
@@ -186,20 +245,9 @@ public class OrderService {
         validateStoreOwnership(order);
         validateTransition(order, EnumOrderStatus.PROCESSING, EnumOrderStatus.SHIPPED);
         order.setStatus(EnumOrderStatus.SHIPPED);
-        return toDto(orderRepository.save(order));
-    }
-
-    /**
-     * Vendedor marca como entregue (SHIPPED → DELIVERED).
-     */
-    @Transactional
-    @PreAuthorize("hasRole('VENDEDOR')")
-    public OrderReadDto deliverOrder(Long orderId) {
-        Order order = getOrThrow(orderId);
-        validateStoreOwnership(order);
-        validateTransition(order, EnumOrderStatus.SHIPPED, EnumOrderStatus.DELIVERED);
-        order.setStatus(EnumOrderStatus.DELIVERED);
-        return toDto(orderRepository.save(order));
+        Order saved = orderRepository.save(order);
+        deliveryService.createDelivery(saved);
+        return toDto(saved);
     }
 
     /**
@@ -274,14 +322,11 @@ public class OrderService {
         }
     }
 
-    /** Valida que o pedido contém pelo menos um produto da loja do vendedor autenticado. */
+    /** Valida que o pedido pertence à loja do vendedor autenticado. */
     private void validateStoreOwnership(Order order) {
         Profile store = getAuthenticatedProfile();
-        boolean ownsProduct = order.getItems().stream()
-                .anyMatch(i -> i.getProduct().getStore() != null
-                        && i.getProduct().getStore().getId().equals(store.getId()));
-        if (!ownsProduct) {
-            throw new BusinessRuleException("Este pedido não contém produtos da sua loja.");
+        if (order.getStore() == null || !order.getStore().getId().equals(store.getId())) {
+            throw new BusinessRuleException("Este pedido não pertence à sua loja.");
         }
     }
 
@@ -308,9 +353,13 @@ public class OrderService {
         return new OrderReadDto(
                 order.getId(),
                 order.getProfile().getId(),
+                order.getStore() != null ? order.getStore().getId() : null,
                 order.getStatus(),
                 order.getPrice(),
-                items
+                order.getShippingCost(),
+                order.getCommissionAmount(),
+                items,
+                order.getCreatedAt()
         );
     }
 

@@ -33,16 +33,21 @@ public class Payment {
     @Column(precision = 10, scale = 2)
     private BigDecimal price;
 
-    @Column(length = 45)
+    @Column(length = 100)
     private String txId;
 
-    @Column(length = 45)
+    @Column(columnDefinition = "TEXT")
     private String pixCode;
 
-    @Column(length = 45)
+    @Column(columnDefinition = "TEXT")
     private String qrCode;
+
+    @Column(columnDefinition = "TEXT")
+    private String ticketUrl;
 
     private LocalDateTime createdDate;
 
     private LocalDateTime paymentDate;
+
+    private LocalDateTime expiresAt;
 }

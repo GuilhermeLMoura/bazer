@@ -45,6 +45,11 @@ public class ProductController {
         return ResponseEntity.ok(productService.findByName(name));
     }
 
+    @GetMapping("/store/{storeId}")
+    public ResponseEntity<List<ProductReadDto>> findByStore(@PathVariable Long storeId) {
+        return ResponseEntity.ok(productService.findByStore(storeId));
+    }
+
     @GetMapping("/most-purchased")
     public ResponseEntity<List<ProductReadDto>> listByMostPurchased() {
         return ResponseEntity.ok(productService.listByMostPurchased());
