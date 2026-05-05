@@ -2,6 +2,7 @@ package bazer.domain.profile.entity;
 
 import bazer.domain.address.entity.Address;
 import bazer.domain.assessment_profile.entity.AssessmentProfile;
+import bazer.domain.commission.entity.Commission;
 import bazer.domain.order.entity.Order;
 import bazer.domain.user.entity.User;
 import jakarta.persistence.*;
@@ -33,6 +34,10 @@ public class Profile {
 
     @Column(length = 15)
     private String phone;
+
+    @ManyToOne
+    @JoinColumn(name = "fk_commission_id")
+    private Commission commission;
 
     @OneToOne
     @JoinColumn(name = "fk_user_id")

@@ -50,6 +50,10 @@ public class ProductService {
         product.setCategory(category);
         product.setStore(store);
         product.setPurchaseCount(0);
+        product.setWeight(dto.weight());
+        product.setWidth(dto.width());
+        product.setHeight(dto.height());
+        product.setLength(dto.length());
 
         return toDto(productRepository.save(product));
     }
@@ -89,6 +93,10 @@ public class ProductService {
         product.setPrice(dto.price());
         product.setStock(dto.stock());
         product.setCategory(category);
+        product.setWeight(dto.weight());
+        product.setWidth(dto.width());
+        product.setHeight(dto.height());
+        product.setLength(dto.length());
 
         return toDto(productRepository.save(product));
     }
@@ -105,6 +113,14 @@ public class ProductService {
     @Transactional(readOnly = true)
     public List<ProductReadDto> listByMostPurchased() {
         return productRepository.findAllByOrderByPurchaseCountDesc().stream().map(this::toDto).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductReadDto> findByStore(Long storeId) {
+        if (!profileRepository.existsById(storeId)) {
+            throw new EntityNotFoundException("Loja não encontrada: " + storeId);
+        }
+        return productRepository.findByStoreId(storeId).stream().map(this::toDto).toList();
     }
 
     @Transactional(readOnly = true)
@@ -155,7 +171,11 @@ public class ProductService {
                 p.getCategory() != null ? p.getCategory().getId() : null,
                 p.getStore() != null ? p.getStore().getId() : null,
                 p.getPurchaseCount(),
-                imageUrls
+                imageUrls,
+                p.getWeight(),
+                p.getWidth(),
+                p.getHeight(),
+                p.getLength()
         );
     }
 }

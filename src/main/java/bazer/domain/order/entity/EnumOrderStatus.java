@@ -14,5 +14,7 @@ public enum EnumOrderStatus {
     /** Entregue ao comprador */
     DELIVERED,
     /** Cancelado */
-    CANCELLED
+    CANCELLED,
+    /** Pagamento gerado expirou — comprador pode gerar um novo */
+    PAGAMENTO_EXPIRADO
 }

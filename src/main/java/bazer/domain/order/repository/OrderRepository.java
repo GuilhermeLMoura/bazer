@@ -22,4 +22,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     /** Lista pedidos que contêm produtos de uma loja, excluindo PENDING */
     @Query("SELECT DISTINCT o FROM Order o JOIN o.items i WHERE i.product.store.id = :storeId AND o.status <> :status")
     List<Order> findByStoreIdAndStatusNot(@Param("storeId") Long storeId, @Param("status") EnumOrderStatus status);
+
+    /** Pedidos pagos aguardando processamento — admin */
+    List<Order> findByStatusOrderByCreatedAtAsc(EnumOrderStatus status);
 }

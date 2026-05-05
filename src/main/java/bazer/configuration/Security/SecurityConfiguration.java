@@ -38,6 +38,7 @@ public class SecurityConfiguration {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/usuarios/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/profiles").permitAll()
                         .requestMatchers(HttpMethod.GET, "/profiles/searchStore").permitAll()
@@ -47,6 +48,8 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.GET, "/assessment-profiles/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/auth/callback").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/payments/webhook/mercadopago").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/melhorenvio/webhook").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex

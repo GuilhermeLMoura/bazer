@@ -1,11 +1,11 @@
 package bazer.domain.order.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
-/** Item a ser adicionado no pedido (status PENDING = carrinho) */
 public record CartItemCreateDto(
-        @NotNull Long productId,
-        @NotNull @Min(1) Integer quantity
+        @NotNull @Schema(example = "1", description = "ID do produto") Long productId,
+        @NotNull @Min(1) @Schema(example = "2") Integer quantity
 ) {
 }

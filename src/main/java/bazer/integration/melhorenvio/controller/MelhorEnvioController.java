@@ -1,5 +1,7 @@
 package bazer.integration.melhorenvio.controller;
 
+import bazer.domain.delivery.service.DeliveryService;
+import bazer.integration.melhorenvio.dto.MelhorEnvioWebhookDto;
 import bazer.integration.melhorenvio.service.MelhorEnvioAuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,7 @@ import java.util.Map;
 public class MelhorEnvioController {
 
     private final MelhorEnvioAuthService authService;
+    private final DeliveryService deliveryService;
 
     @GetMapping("/melhorenvio/authorize")
     @PreAuthorize("hasRole('ADMIN')")
@@ -48,5 +51,11 @@ public class MelhorEnvioController {
     public ResponseEntity<String> refresh() {
         authService.refreshToken();
         return ResponseEntity.ok("Token renovado com sucesso!");
+    }
+
+    @PostMapping("/melhorenvio/webhook")
+    public ResponseEntity<Void> webhook(@RequestBody MelhorEnvioWebhookDto dto) {
+        deliveryService.handleWebhook(dto);
+        return ResponseEntity.ok().build();
     }
 }

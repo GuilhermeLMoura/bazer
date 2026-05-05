@@ -1,6 +1,7 @@
 package bazer.domain.order.controller;
 
 import bazer.domain.order.dto.CartItemCreateDto;
+import bazer.domain.order.dto.CheckoutDto;
 import bazer.domain.order.dto.OrderReadDto;
 import bazer.domain.order.service.OrderService;
 import jakarta.validation.Valid;
@@ -34,8 +35,8 @@ public class OrderController {
     }
 
     @PostMapping("/cart/checkout")
-    public ResponseEntity<OrderReadDto> checkout() {
-        return ResponseEntity.ok(orderService.checkout());
+    public ResponseEntity<OrderReadDto> checkout(@RequestBody @Valid CheckoutDto dto) {
+        return ResponseEntity.ok(orderService.checkout(dto));
     }
 
     // ─────────────── PEDIDOS - COMPRADOR ───────────────
@@ -64,6 +65,12 @@ public class OrderController {
 
     // ─────────────── PEDIDOS - VENDEDOR ───────────────
 
+    /** Lista pedidos pagos aguardando processamento, do mais antigo para o mais recente. */
+    @GetMapping("/orders/admin/confirmed")
+    public ResponseEntity<List<OrderReadDto>> listConfirmedOrders() {
+        return ResponseEntity.ok(orderService.listConfirmedOrders());
+    }
+
     /** Lista todos os pedidos que contêm produtos da loja do vendedor autenticado. */
     @GetMapping("/orders/store")
     public ResponseEntity<List<OrderReadDto>> listStoreOrders() {
@@ -82,9 +89,4 @@ public class OrderController {
         return ResponseEntity.ok(orderService.shipOrder(id));
     }
 
-    /** Marca como entregue (SHIPPED → DELIVERED). */
-    @PostMapping("/orders/{id}/deliver")
-    public ResponseEntity<OrderReadDto> deliverOrder(@PathVariable Long id) {
-        return ResponseEntity.ok(orderService.deliverOrder(id));
-    }
 }

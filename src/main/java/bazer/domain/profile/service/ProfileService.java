@@ -2,16 +2,21 @@ package bazer.domain.profile.service;
 
 import bazer.domain.address.entity.Address;
 import bazer.domain.address.repository.AddressRepository;
+import bazer.domain.commission.entity.Commission;
+import bazer.domain.commission.repository.CommissionRepository;
 import bazer.domain.profile.dto.ProfileRegisterDto;
+import bazer.domain.profile.dto.ProfileUpdateDto;
 import bazer.domain.profile.entity.Profile;
 import bazer.domain.profile.repository.ProfileRepository;
 import bazer.domain.user.dto.UserCreateDto;
 import bazer.domain.user.entity.EnumRole;
 import bazer.domain.user.entity.User;
 import bazer.domain.user.service.UserService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -27,6 +32,7 @@ public class ProfileService {
 
     private final ProfileRepository profileRepository;
     private final AddressRepository addressRepository;
+    private final CommissionRepository commissionRepository;
     private final UserService userService;
     private final FileStorageService fileStorageService;
 
@@ -58,6 +64,13 @@ public class ProfileService {
         profile.setPhoto(photoUrl);
         profile.setPhone(dto.getPhone());
         profile.setUser(user);
+
+        if (dto.getCommissionId() != null) {
+            Commission commission = commissionRepository.findById(dto.getCommissionId())
+                    .orElseThrow(() -> new EntityNotFoundException("Comissão não encontrada: " + dto.getCommissionId()));
+            profile.setCommission(commission);
+        }
+
         profile = profileRepository.save(profile);
 
         Address address = new Address();
@@ -84,5 +97,27 @@ public class ProfileService {
 
     public List<Profile> searchStores(String name) {
         return profileRepository.searchByRole(EnumRole.VENDEDOR, name);
+    }
+
+    @Transactional
+    public Profile update(ProfileUpdateDto dto) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Profile profile = profileRepository.findByUserUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("Perfil não encontrado"));
+
+        if (dto.getName() != null) profile.setName(dto.getName());
+        if (dto.getDocument() != null) profile.setDocument(dto.getDocument());
+        if (dto.getPhone() != null) profile.setPhone(dto.getPhone());
+
+        return profileRepository.save(profile);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public Profile assignCommission(Long profileId, Long commissionId) {
+        Profile profile = findById(profileId);
+        Commission commission = commissionRepository.findById(commissionId)
+                .orElseThrow(() -> new EntityNotFoundException("Comissão não encontrada: " + commissionId));
+        profile.setCommission(commission);
+        return profileRepository.save(profile);
     }
 }

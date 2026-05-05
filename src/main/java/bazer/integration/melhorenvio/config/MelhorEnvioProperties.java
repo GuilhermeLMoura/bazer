@@ -12,6 +12,7 @@ public class MelhorEnvioProperties {
     private String clientSecret;
     private String redirectUri;
     private String userAgent;
+    private boolean mockEnabled = false;
 
     public String getBaseUrl() { return baseUrl; }
     public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
@@ -27,4 +28,7 @@ public class MelhorEnvioProperties {
 
     public String getUserAgent() { return userAgent; }
     public void setUserAgent(String userAgent) { this.userAgent = userAgent; }
+
+    public boolean isMockEnabled() { return mockEnabled; }
+    public void setMockEnabled(boolean mockEnabled) { this.mockEnabled = mockEnabled; }
 }

@@ -37,6 +37,18 @@ public class Product {
     @Column(columnDefinition = "INTEGER DEFAULT 0")
     private Integer purchaseCount = 0;
 
+    @Column(precision = 8, scale = 3)
+    private BigDecimal weight;
+
+    @Column
+    private Integer width;
+
+    @Column
+    private Integer height;
+
+    @Column
+    private Integer length;
+
     @ManyToOne
     @JoinColumn(name = "fk_category_id")
     private Category category;
